@@ -17,6 +17,18 @@ ARCH_PNG   = STATIC_DIR / "architecture.png"
 INDEX_HTML = STATIC_DIR / "index.html"
 
 
+# Pre-load model and Pinecone index on startup to avoid timeout on first request
+@app.on_event("startup")
+async def startup_event():
+    try:
+        from app.retriever import _get_model, _get_index
+        _get_model()
+        _get_index()
+        print("✅ Model and Pinecone index pre-loaded successfully.")
+    except Exception as e:
+        print(f"⚠️ Startup preload warning: {e}")
+
+
 # REQUIRED: execute gets ONLY {"prompt": "..."}
 class ExecuteIn(BaseModel):
     prompt: str
