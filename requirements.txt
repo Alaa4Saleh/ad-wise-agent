@@ -5,3 +5,4 @@ requests
 python-dotenv
 pydantic
 sentence-transformers
+pinecone[grpc]
