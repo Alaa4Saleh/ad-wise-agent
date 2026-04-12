@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Ad-Wise — AI-Powered Performance Ad Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #fff5f8;
+      --surface:   #ffffff;
+      --border:    #f5d5e0;
+      --border2:   #f0b8cc;
+      --violet:    #ff2d6b;
+      --violet-lt: #fff0f4;
+      --violet-glow: rgba(255,45,107,0.18);
+      --cyan:      #ff6b35;
+      --cyan-lt:   #fff4ef;
+      --pink:      #c8003a;
+      --pink-lt:   #fff0f4;
+      --lime:      #ff4d7d;
+      --lime-lt:   #fff0f4;
+      --text:      #1f0812;
+      --text2:     #6b2040;
+      --muted:     #c47a95;
+      --user-bg:#ffe0ea; --bot-bg:#ffffff;
+      --radius:18px; --font:'Plus Jakarta Sans',sans-serif; --mono:'Fira Code',monospace;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+      background-image: radial-gradient(ellipse 60% 40% at 10% 0%, rgba(255,45,107,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 35% at 90% 100%, rgba(255,107,53,0.07) 0%, transparent 60%); }
+    header { display:flex; align-items:center; gap:14px; padding:13px 24px; background:rgba(255,255,255,0.88); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); flex-shrink:0; box-shadow:0 2px 16px rgba(255,45,107,0.08); z-index:10; }
+    .logo-wrap { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#ffb3cc 0%,#ffcce0 100%); display:grid; place-items:center; flex-shrink:0; box-shadow:0 4px 16px var(--violet-glow); font-size:1.2rem; }
+    .brand-name { font-size:1.05rem; font-weight:800; color:var(--text); letter-spacing:-0.02em; }
+    .brand-tag  { font-size:0.63rem; font-weight:500; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; margin-top:1px; }
+    .header-right { margin-left:auto; display:flex; gap:8px; }
+    .nav-btn { background:var(--surface); border:1px solid var(--border); color:var(--text2); padding:6px 14px; border-radius:10px; font-family:var(--font); font-size:0.75rem; font-weight:600; cursor:pointer; transition:all 0.18s; }
+    .nav-btn:hover { border-color:var(--violet); color:var(--violet); background:var(--violet-lt); }
+    .nav-btn:disabled { opacity:0.35; cursor:not-allowed; }
+
+    #chat { flex:1; overflow-y:auto; padding:24px 0 10px; display:flex; flex-direction:column; gap:0; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+    #chat::-webkit-scrollbar { width:4px; } #chat::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
+
+    .msg-row { display:flex; padding:6px 24px; animation:fadeIn .25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .msg-row.user { justify-content:flex-end; }
+    .msg-row.bot  { justify-content:flex-start; }
+    .bubble { max-width:72%; padding:12px 16px; border-radius:var(--radius); line-height:1.6; font-size:.92rem; }
+    .msg-row.user .bubble { background:linear-gradient(135deg,var(--violet) 0%,#ff6b9d 100%); color:#fff; border-bottom-right-radius:4px; box-shadow:0 4px 16px var(--violet-glow); font-weight:500; }
+    .msg-row.bot  .bubble { background:var(--bot-bg); border:1px solid var(--border); border-bottom-left-radius:4px; box-shadow:0 2px 12px rgba(255,45,107,0.06); }
+    .bubble strong { color:var(--violet); font-weight:700; }
+    .bubble em     { color:var(--muted); font-style:normal; font-size:.85em; }
+
+    .options-row { padding:8px 24px 4px; display:flex; flex-wrap:wrap; gap:8px; animation:fadeIn .3s ease; }
+    .opt-btn { background:var(--surface); border:1.5px solid var(--border); color:var(--text); padding:9px 16px; border-radius:12px; font-family:var(--font); font-size:.85rem; font-weight:600; cursor:pointer; transition:all .18s; text-align:left; box-shadow:0 2px 8px rgba(255,45,107,0.06); }
+    .opt-btn:hover { border-color:var(--violet); color:var(--violet); background:var(--violet-lt); transform:translateY(-1px); box-shadow:0 6px 20px var(--violet-glow); }
+    .opt-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .opt-desc { display:block; font-size:.73rem; color:var(--muted); margin-top:2px; font-weight:400; }
+
+    .result-box { margin:8px 24px; background:var(--surface); border:1.5px solid var(--border2); border-radius:var(--radius); overflow:visible; animation:fadeIn .3s ease; box-shadow:0 8px 40px rgba(255,45,107,0.10); }
+    .result-box pre { font-family:var(--mono); font-size:.82rem; line-height:1.7; padding:16px 18px; white-space:pre-wrap; word-break:break-word; color:var(--text); background:#fff8fa; }
+    .result-header { background:linear-gradient(90deg,var(--lime-lt) 0%,#fff8fa 100%); padding:8px 18px; font-size:.78rem; font-weight:700; color:var(--lime); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+    .result-dot { width:7px; height:7px; background:var(--lime); border-radius:50%; animation:blink 1.8s infinite; box-shadow:0 0 6px var(--lime); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .copy-btn { display:block; width:100%; background:none; border:none; border-top:1px solid var(--border); color:var(--muted); padding:8px; font-family:var(--font); font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; }
+    .copy-btn:hover { background:var(--violet-lt); color:var(--violet); }
+
+    .steps-toggle { margin:10px 16px 0 !important; padding:10px 12px; font-size:.82rem; font-weight:700; color:var(--violet); border:1px solid var(--border); border-radius:10px; background:var(--violet-lt); cursor:pointer; text-align:left; width:fit-content; font-family:var(--font); transition:all .2s; }
+    .steps-toggle:hover { border-color:var(--violet); background:rgba(255,45,107,0.1); }
+    .steps-panel { margin:4px 24px 8px; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .steps-panel pre { font-family:var(--mono); font-size:.72rem; padding:12px 14px; white-space:pre-wrap; word-break:break-word; color:var(--muted); max-height:360px; overflow-y:auto; }
+    details summary::-webkit-details-marker { display:none; } details summary { list-style:none; }
+
+    .typing { display:flex; align-items:center; gap:5px; padding:10px 16px; }
+    .typing span { width:7px; height:7px; border-radius:50%; animation:bounce .9s infinite; }
+    .typing span:nth-child(1) { background:var(--violet); }
+    .typing span:nth-child(2) { background:var(--cyan); animation-delay:.15s; }
+    .typing span:nth-child(3) { background:var(--pink); animation-delay:.3s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    #input-bar { padding:14px 24px; border-top:1px solid var(--border); background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); display:flex; gap:10px; flex-shrink:0; box-shadow:0 -4px 24px rgba(255,45,107,0.07); z-index:10; }
+    #user-input { flex:1; background:var(--bg); border:1.5px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font); font-size:.9rem; padding:10px 14px; resize:none; height:44px; max-height:120px; overflow-y:auto; outline:none; transition:all .2s; }
+    #user-input:focus { border-color:var(--violet); box-shadow:0 0 0 3px rgba(255,45,107,0.12); }
+    #user-input::placeholder { color:var(--muted); }
+    #run-btn { background:linear-gradient(135deg,var(--violet) 0%,var(--pink) 100%); color:#fff; border:none; border-radius:12px; height:44px; padding:0 18px; font-size:.9rem; font-weight:800; cursor:pointer; transition:all .18s; flex-shrink:0; display:grid; place-items:center; min-width:120px; box-shadow:0 4px 20px rgba(255,45,107,0.35); font-family:var(--font); }
+    #run-btn:hover { transform:translateY(-1px); box-shadow:0 8px 28px rgba(255,45,107,0.45); filter:brightness(1.05); }
+    #run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    #send-btn { background:var(--surface); color:var(--text2); border:1.5px solid var(--border); border-radius:12px; width:44px; height:44px; font-size:1.1rem; cursor:pointer; transition:all .18s; display:grid; place-items:center; flex-shrink:0; }
+    #send-btn:hover { border-color:var(--cyan); color:var(--cyan); background:var(--cyan-lt); }
+    #send-btn:disabled { opacity:.4; cursor:not-allowed; }
+  /* ── Analyze Modal ── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#fff; border-radius:20px; padding:28px; width:min(520px,92vw); box-shadow:0 20px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:16px; }
+  .modal-title { font-size:1.1rem; font-weight:800; color:#1f0812; display:flex; align-items:center; gap:8px; }
+  .modal-label { font-size:.85rem; font-weight:700; color:#6b2040; margin-bottom:4px; }
+  .modal-textarea { width:100%; border:1.5px solid #f0b8cc; border-radius:10px; padding:10px 12px; font-family:var(--font); font-size:.88rem; resize:vertical; min-height:90px; outline:none; }
+  .modal-textarea:focus { border-color:#6c3ff5; box-shadow:0 0 0 3px rgba(108,63,245,.12); }
+  .csv-drop { border:2px dashed #d8b4fe; border-radius:12px; padding:18px; text-align:center; cursor:pointer; color:#7c3aed; font-size:.85rem; font-weight:600; transition:all .2s; background:#faf5ff; }
+  .csv-drop:hover,.csv-drop.drag { border-color:#6c3ff5; background:#ede9fe; }
+  .csv-drop input { display:none; }
+  .csv-filename { font-size:.78rem; color:#7c3aed; margin-top:6px; }
+  .modal-hint { font-size:.73rem; color:#9ca3af; }
+  .csv-attached-badge { display:none; align-items:center; gap:6px; background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:7px 12px; font-size:.82rem; font-weight:700; color:#15803d; margin-top:6px; }
+  .csv-attached-badge.visible { display:flex; }
+  .csv-attached-badge .badge-remove { margin-left:auto; cursor:pointer; color:#ef4444; font-size:.95rem; font-weight:900; line-height:1; padding:0 2px; }
+  .csv-attached-badge .badge-remove:hover { color:#b91c1c; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+  .modal-cancel { background:#fff; border:1.5px solid #e5e7eb; color:#6b7280; padding:8px 18px; border-radius:10px; font-family:var(--font); font-size:.85rem; font-weight:600; cursor:pointer; }
+  .modal-analyze-btn { background:linear-gradient(135deg,#6c3ff5,#a855f7); color:#fff; border:none; padding:8px 22px; border-radius:10px; font-family:var(--font); font-size:.88rem; font-weight:800; cursor:pointer; box-shadow:0 4px 16px rgba(108,63,245,.35); }
+  .modal-analyze-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .analysis-report { margin:8px 24px; background:#faf5ff; border:1.5px solid #d8b4fe; border-radius:var(--radius); overflow:visible; animation:fadeIn .3s ease; }
+  .analysis-header { background:linear-gradient(90deg,#ede9fe,#faf5ff); padding:8px 18px; font-size:.78rem; font-weight:700; color:#6c3ff5; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid #e9d5ff; display:flex; align-items:center; gap:8px; }
+  .analysis-pre { font-family:var(--mono); font-size:.82rem; line-height:1.7; padding:16px 18px; white-space:pre-wrap; word-break:break-word; color:#1f0812; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo-wrap">✨</div>
+  <div>
+    <div class="brand-name">Ad-Wise</div>
+    <div class="brand-tag">AI-Powered Performance Ad Generator</div>
+  </div>
+  <div class="header-right">
+    <button id="back-btn" class="nav-btn" onclick="goBack()">← Back</button>
+    <button class="nav-btn" onclick="restart()">↺ Restart</button>
+    <button class="nav-btn" onclick="openAnalyzeModal()" style="background:linear-gradient(135deg,#6c3ff5,#a855f7);color:#fff;border-color:#6c3ff5;">📊 Analyze Ad</button>
+  </div>
+</header>
+
+<div id="chat"></div>
+
+<div id="input-bar">
+  <textarea id="user-input" placeholder="Describe your product or write a prompt…" rows="1"></textarea>
+  <button id="run-btn" onclick="runAgentExecute()">✦ Run Agent</button>
+  <button id="send-btn" onclick="sendMessageWizard()" title="Wizard Chat">➤</button>
+</div>
+
+<script>
+let convState = null;
+let busy = false;
+let lastWizardAgentPrompt = "";
+let lastExecutePrompt = "";  // remembers original product for "continue" flow
+let csvParsedText = "";      // stores CSV content parsed client-side
+
+window.onload = () => {
+  _initDropZone();  // attach CSV drag-drop now that modal HTML exists
+  convState = { step: "MENU" };
+  appendBotBubble(
+    "👋 Welcome to **Ad-Wise**!\n\nI help you craft high-converting ad copy grounded in real product listing data.\n\nChoose an option:"
+  );
+  appendOptions([
+    { id: "full_ad",       label: "✍️  Create Full Ad",         desc: "Headline + 5 bullets + description + keywords + publishing tips" },
+    { id: "headline_only", label: "🏷️  Create Headline Only",   desc: "One high-converting headline line" },
+    { id: "keywords_5",    label: "🔑  Get 5 Must-Use Keywords", desc: "Exactly 5 keywords/phrases to include in the headline" },
+    { id: "analyze_ad",    label: "📊  Analyze Ad Performance",  desc: "Paste your metrics or upload a CSV — get insights + a better headline" },
+  ], true);
+  updateNavButtons();
+};
+
+function restart() {
+  document.getElementById("chat").innerHTML = "";
+  convState = { step: "MENU" };
+  lastWizardAgentPrompt = "";
+  lastExecutePrompt = "";
+  appendBotBubble(
+    "👋 Welcome to **Ad-Wise**!\n\nI help you craft high-converting ad copy grounded in real product listing data.\n\nChoose an option:"
+  );
+  appendOptions([
+    { id: "full_ad",       label: "✍️  Create Full Ad",         desc: "Headline + 5 bullets + description + keywords + publishing tips" },
+    { id: "headline_only", label: "🏷️  Create Headline Only",   desc: "One high-converting headline line" },
+    { id: "keywords_5",    label: "🔑  Get 5 Must-Use Keywords", desc: "Exactly 5 keywords/phrases to include in the headline" },
+    { id: "analyze_ad",    label: "📊  Analyze Ad Performance",  desc: "Paste your metrics or upload a CSV — get insights + a better headline" },
+  ], true);
+  updateNavButtons();
+}
+
+function canGoBack() {
+  return convState && convState.step && convState.step !== "GREETING" && convState.step !== "MENU";
+}
+function updateNavButtons() {
+  const backBtn = document.getElementById("back-btn");
+  if (!backBtn) return;
+  backBtn.disabled = busy || !canGoBack();
+}
+function goBack() {
+  if (busy || !canGoBack()) return;
+  callChat("__back", convState);
+}
+
+function sendMessageWizard() {
+  const inp = document.getElementById("user-input");
+  const text = inp.value.trim();
+  if (!text || busy) return;
+  inp.value = ""; inp.style.height = "44px";
+  appendUserBubble(text);
+  callChat(text, convState);
+}
+
+function runAgentExecute() {
+  // Safety: if busy is stuck (e.g. after a failed request), reset it
+  if (busy) {
+    busy = false;
+    document.getElementById("run-btn").disabled = false;
+    document.getElementById("send-btn").disabled = false;
+    updateNavButtons();
+  }
+  const inp = document.getElementById("user-input");
+  const typed = inp.value.trim();
+  const promptToRun = typed || lastWizardAgentPrompt;
+  if (!promptToRun) {
+    appendBotBubble("⚠️ Please type a prompt, or complete the Wizard once so I can use your selections.");
+    return;
+  }
+  inp.value = ""; inp.style.height = "44px";
+  if (!typed && lastWizardAgentPrompt) {
+    appendUserBubble("Run Agent (using Wizard selections)");
+  } else {
+    appendUserBubble(typed);
+  }
+  callExecute(promptToRun);
+}
+
+document.getElementById("user-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAgentExecute(); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { e.preventDefault(); goBack(); }
+});
+function chooseOption(id, label) {
+  if (busy) return;
+  // Analyze option opens the full modal (CSV upload + metrics input)
+  if (id === "analyze_ad") {
+    openAnalyzeModal();
+    return;
+  }
+  document.querySelectorAll(".opt-btn").forEach(b => b.disabled = true);
+  appendUserBubble(label);
+  callChat(id, convState);
+}
+
+const CONTINUE_WORDS = new Set(["continue","just continue","go ahead","generate anyway","proceed","yes continue","yes","ok","sure"]);
+
+async function callExecute(prompt) {
+  busy = true; updateNavButtons();
+  document.getElementById("send-btn").disabled = true;
+  document.getElementById("run-btn").disabled = true;
+  const typingEl = appendTyping();
+
+  const isContinue = CONTINUE_WORDS.has(prompt.trim().toLowerCase());
+  const bodyPayload = { prompt, last_prompt: lastExecutePrompt };
+  if (!isContinue && !lastExecutePrompt) lastExecutePrompt = prompt;
+
+  try {
+    const res = await fetch("/api/execute", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyPayload)
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error("HTTP " + res.status + " — " + t.slice(0,300)); }
+    const data = await res.json();
+    typingEl.remove();
+    if (data.status === "error") { appendBotBubble("❌ Error: " + (data.error || "Unknown error")); return; }
+    const resultText = (data.response || "").trim();
+    const looksLikeClarify = resultText.includes("type **continue**") || resultText.includes("Could you add") || resultText.includes("could you share");
+    if (looksLikeClarify) {
+      appendBotBubble(resultText);
+    } else {
+      appendResult(resultText || "(empty response)", data.steps);
+      lastExecutePrompt = "";
+      setTimeout(() => {
+        convState = { step: "MENU" };
+        appendBotBubble("✅ Done! What would you like to do next?");
+        appendOptions([
+          { id: "full_ad",       label: "✍️  Create Full Ad",         desc: "Headline + 5 bullets + description + keywords + publishing tips" },
+          { id: "headline_only", label: "🏷️  Create Headline Only",   desc: "One high-converting headline line" },
+          { id: "keywords_5",    label: "🔑  Get 5 Must-Use Keywords", desc: "Exactly 5 keywords/phrases to include in the headline" },
+          { id: "analyze_ad",    label: "📊  Analyze Ad Performance",  desc: "Paste your metrics or upload a CSV — get insights + a better headline" },
+        ], true);
+        updateNavButtons();
+      }, 300);
+    }
+  } catch (err) { typingEl.remove(); appendBotBubble("❌ Error: " + err.message); }
+  finally { busy = false; updateNavButtons(); document.getElementById("send-btn").disabled = false; document.getElementById("run-btn").disabled = false; scrollBottom(); }
+}
+
+// ── Analyze Modal ──────────────────────────────────────────────────────
+function openAnalyzeModal() {
+  document.getElementById("analyze-modal").classList.add("open");
+  document.getElementById("analyze-input").focus();
+}
+function closeAnalyzeModal() {
+  document.getElementById("analyze-modal").classList.remove("open");
+  document.getElementById("analyze-input").value = "";
+  document.getElementById("csv-filename").textContent = "";
+  // Reset the badge UI (but keep file input & csvParsedText — submitAnalyze clears those after use)
+  const badge = document.getElementById("csv-badge");
+  if (badge) badge.classList.remove("visible");
+  const dropText = document.getElementById("csv-drop-text");
+  if (dropText) dropText.innerHTML = "Drag &amp; drop a CSV here or <strong>browse</strong>";
+}
+// (modal close-on-backdrop moved to _initDropZone below)
+
+function handleCsvSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById("csv-filename").textContent = "";
+  _showCsvBadge(file.name);
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split("\n").slice(0, 51);
+    csvParsedText = "\nCSV DATA:\n" + lines.join("\n");
+  };
+  reader.readAsText(file);
+}
+
+function _showCsvBadge(name) {
+  const badge = document.getElementById("csv-badge");
+  const badgeName = document.getElementById("csv-badge-name");
+  if (badge && badgeName) { badgeName.textContent = name; badge.classList.add("visible"); }
+  const dropText = document.getElementById("csv-drop-text");
+  if (dropText) dropText.innerHTML = "✅ File selected — <strong>change file</strong>";
+}
+
+function removeCsvAttachment() {
+  document.getElementById("csv-file-input").value = "";
+  document.getElementById("csv-badge").classList.remove("visible");
+  document.getElementById("csv-drop-text").innerHTML = "Drag &amp; drop a CSV here or <strong>browse</strong>";
+  csvParsedText = "";
+}
+
+function _readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = () => reject(new Error("File read failed"));
+    r.readAsText(file);
+  });
+}
+
+// CSV drag & drop — attached after DOM is ready to avoid null crash
+function _initDropZone() {
+  // Close modal when clicking backdrop — safe here because DOM is ready
+  const modal = document.getElementById("analyze-modal");
+  if (modal) modal.addEventListener("click", function(e) { if (e.target === this) closeAnalyzeModal(); });
+
+  const dropZone = document.getElementById("csv-drop-zone");
+  if (!dropZone) return;
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault(); dropZone.classList.remove("drag");
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".csv")) {
+      document.getElementById("csv-filename").textContent = "📄 " + file.name;
+      const reader = new FileReader();
+      reader.onload = ev => { csvParsedText = "\nCSV DATA:\n" + ev.target.result.split("\n").slice(0,51).join("\n"); };
+      reader.readAsText(file);
+      _showCsvBadge(file.name);
+    }
+  });
+}
+
+async function submitAnalyze() {
+  const metricText = document.getElementById("analyze-input").value.trim();
+  if (!metricText) { document.getElementById("analyze-input").focus(); return; }
+  const btn = document.getElementById("analyze-submit-btn");
+  btn.disabled = true; btn.textContent = "⏳ Analyzing...";
+
+  // Read file BEFORE closing modal (closing resets the input element)
+  const fileInput = document.getElementById("csv-file-input");
+  if (fileInput && fileInput.files && fileInput.files[0]) {
+    try {
+      const raw = await _readFileAsText(fileInput.files[0]);
+      const lines = raw.split("\n").slice(0, 51);
+      csvParsedText = "\nCSV DATA:\n" + lines.join("\n");
+    } catch(e) { /* keep whatever was already parsed */ }
+  }
+
+  // Close modal AFTER reading the file
+  closeAnalyzeModal();
+  document.getElementById("csv-file-input").value = "";
+  const fullPrompt = "Analyze my ad performance: " + metricText + csvParsedText;
+  const csvName = document.getElementById("csv-badge-name") && document.getElementById("csv-badge").classList.contains("visible")
+    ? document.getElementById("csv-badge-name").textContent : "";
+  const bubbleText = "📊 Analyze: " + metricText.slice(0, 60) + (metricText.length > 60 ? "..." : "")
+    + (csvName ? "  📎 " + csvName : "");
+  appendUserBubble(bubbleText);
+  const typingEl = appendTyping();
+  try {
+    const res = await fetch("/api/execute", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: fullPrompt, last_prompt: "" })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    typingEl.remove();
+    if (data.status === "error") {
+      appendBotBubble("❌ Analysis failed: " + (data.error || "Unknown error"));
+      return;
+    }
+    const reportText = (data.response || "").trim();
+    if (!reportText) {
+      appendBotBubble("❌ Analysis returned empty. Try adding more detail to your metrics, e.g. CTR=3%, ROI=2.5");
+      return;
+    }
+    appendAnalysisReport(reportText, data.steps);
+  } catch (err) { typingEl.remove(); appendBotBubble("❌ Error: " + err.message); }
+  finally {
+    btn.disabled = false; btn.textContent = "🔍 Analyze";
+    csvParsedText = "";
+    document.getElementById("csv-file-input").value = "";
+    scrollBottom();
+  }
+}
+
+function appendAnalysisReport(text, steps) {
+  const box = document.createElement("div"); box.className = "analysis-report";
+  const header = document.createElement("div"); header.className = "analysis-header";
+  header.innerHTML = `<span>📊</span> ANALYSIS REPORT`;
+  const pre = document.createElement("pre"); pre.className = "analysis-pre"; pre.textContent = text;
+  const copyBtn = document.createElement("button"); copyBtn.className = "copy-btn";
+  copyBtn.textContent = "📋 Copy to clipboard";
+  copyBtn.onclick = () => { navigator.clipboard.writeText(text).then(() => { copyBtn.textContent = "✅ Copied!"; setTimeout(() => copyBtn.textContent = "📋 Copy to clipboard", 2000); }); };
+  box.appendChild(header); box.appendChild(pre); box.appendChild(copyBtn);
+
+  const stepsArr = Array.isArray(steps) ? steps : [];
+  const toggle = document.createElement("button"); toggle.className = "steps-toggle";
+  toggle.textContent = `▶ Show execution steps (${stepsArr.length})`;
+  const panel = document.createElement("div"); panel.className = "steps-panel"; panel.style.display = "none";
+  if (stepsArr.length) {
+    const container = document.createElement("div"); container.style.padding = "10px 12px";
+    stepsArr.forEach((s, i) => {
+      const d = document.createElement("details");
+      d.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:8px;";
+      const sum = document.createElement("summary"); sum.style.cursor = "pointer";
+      sum.textContent = String(i+1).padStart(2,"0") + " — " + (s.module||"UnknownModule");
+      const pre2 = document.createElement("pre");
+      pre2.style.cssText = "margin-top:8px;font-size:.72rem;white-space:pre-wrap;color:var(--muted);";
+      pre2.textContent = JSON.stringify(s, null, 2);
+      d.appendChild(sum); d.appendChild(pre2); container.appendChild(d);
+    });
+    panel.appendChild(container);
+  }
+  toggle.onclick = () => { const o = panel.style.display !== "none"; panel.style.display = o ? "none" : "block"; toggle.textContent = (o?"▶":"▼") + ` Show execution steps (${stepsArr.length})`; };
+  box.appendChild(toggle); box.appendChild(panel);
+  chat().appendChild(box); scrollBottom();
+}
+
+async function callChat(prompt, state) {
+  busy = true; updateNavButtons();
+  document.getElementById("send-btn").disabled = true;
+  document.getElementById("run-btn").disabled = true;
+  const typingEl = appendTyping();
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, state })
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error("HTTP " + res.status + " — " + t.slice(0,300)); }
+    const data = await res.json();
+    typingEl.remove();
+    convState = data.next_state || null;
+    if (typeof data.agent_prompt === "string" && data.agent_prompt.trim()) {
+      lastWizardAgentPrompt = data.agent_prompt.trim();
+      const inp = document.getElementById("user-input");
+      if (inp && !inp.value.trim()) inp.value = lastWizardAgentPrompt;
+    }
+    renderBotTurn(data);
+  } catch (err) { typingEl.remove(); appendBotBubble("❌ Error: " + err.message); }
+  finally { busy = false; updateNavButtons(); document.getElementById("send-btn").disabled = false; document.getElementById("run-btn").disabled = false; scrollBottom(); }
+}
+
+function renderBotTurn(data) {
+  const uiType = (data.ui_type || "text").trim();
+  if (data.status === "error") { appendBotBubble("❌ Error: " + data.error); return; }
+  if (uiType === "result") {
+    const resultText = (data.response || data.message || "").trim();
+    appendResult(resultText || "(empty response)", data.steps);
+    // After a wizard result, reset state to MENU and show options again
+    setTimeout(() => {
+      convState = { step: "MENU" };
+      appendBotBubble("✅ Done! What would you like to do next?");
+      appendOptions([
+        { id: "full_ad",       label: "✍️  Create Full Ad",         desc: "Headline + 5 bullets + description + keywords + publishing tips" },
+        { id: "headline_only", label: "🏷️  Create Headline Only",   desc: "One high-converting headline line" },
+        { id: "keywords_5",    label: "🔑  Get 5 Must-Use Keywords", desc: "Exactly 5 keywords/phrases to include in the headline" },
+        { id: "analyze_ad",    label: "📊  Analyze Ad Performance",  desc: "Paste your metrics or upload a CSV — get insights + a better headline" },
+      ], true);
+      updateNavButtons();
+    }, 300);
+    return;
+  }
+  const msg = data.message || data.response || "";
+  if (msg) appendBotBubble(msg);
+  if ((uiType === "menu" || uiType === "categories") && data.options) appendOptions(data.options, uiType === "menu");
+}
+
+const chat = () => document.getElementById("chat");
+
+function appendUserBubble(text) {
+  const row = document.createElement("div"); row.className = "msg-row user";
+  row.innerHTML = `<div class="bubble">${esc(text)}</div>`;
+  chat().appendChild(row); scrollBottom();
+}
+function appendBotBubble(md) {
+  const row = document.createElement("div"); row.className = "msg-row bot";
+  row.innerHTML = `<div class="bubble">${renderMd(md)}</div>`;
+  chat().appendChild(row); scrollBottom();
+}
+function appendTyping() {
+  const row = document.createElement("div"); row.className = "msg-row bot";
+  row.innerHTML = `<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chat().appendChild(row); scrollBottom(); return row;
+}
+function appendOptions(options, hasDesc) {
+  const wrap = document.createElement("div"); wrap.className = "options-row";
+  const opts = Array.isArray(options) ? [...options] : [];
+  if (canGoBack() && !opts.some(o => o && o.id === "__back"))
+    opts.push({ id: "__back", label: "⬅ Back", desc: "Return to previous step" });
+  opts.forEach(opt => {
+    const btn = document.createElement("button"); btn.className = "opt-btn";
+    btn.onclick = () => chooseOption(opt.id, opt.label);
+    btn.innerHTML = esc(opt.label) + (hasDesc && opt.desc ? `<span class="opt-desc">${esc(opt.desc)}</span>` : "");
+    wrap.appendChild(btn);
+  });
+  chat().appendChild(wrap); scrollBottom();
+}
+function appendResult(text, steps) {
+  const box = document.createElement("div"); box.className = "result-box";
+  const header = document.createElement("div"); header.className = "result-header";
+  header.innerHTML = `<div class="result-dot"></div> Generated Output`;
+  const pre = document.createElement("pre"); pre.textContent = text;
+  const copyBtn = document.createElement("button"); copyBtn.className = "copy-btn";
+  copyBtn.textContent = "📋 Copy to clipboard";
+  copyBtn.onclick = () => { navigator.clipboard.writeText(text).then(() => { copyBtn.textContent = "✅ Copied!"; setTimeout(() => copyBtn.textContent = "📋 Copy to clipboard", 2000); }); };
+  box.appendChild(header); box.appendChild(pre); box.appendChild(copyBtn);
+
+  const stepsArr = Array.isArray(steps) ? steps : [];
+  const toggle = document.createElement("button"); toggle.className = "steps-toggle";
+  toggle.style.margin = "10px 16px 0";
+  toggle.textContent = `▶ Show execution steps (${stepsArr.length})`;
+  const panel = document.createElement("div"); panel.className = "steps-panel"; panel.style.display = "none"; panel.style.margin = "8px 16px 14px";
+  if (stepsArr.length === 0) {
+    panel.innerHTML = `<pre>${esc("No steps returned from the API.")}</pre>`;
+  } else {
+    const container = document.createElement("div"); container.style.padding = "10px 12px";
+    stepsArr.forEach((s, i) => {
+      const d = document.createElement("details");
+      d.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:8px;background:rgba(255,45,107,0.02);";
+      const sum = document.createElement("summary");
+      sum.style.cssText = "cursor:pointer;color:var(--text2);font-family:var(--mono);";
+      sum.textContent = String(i+1).padStart(2,"0") + " — " + (s.module || "UnknownModule");
+      d.appendChild(sum);
+      const pre2 = document.createElement("pre");
+      pre2.style.cssText = "margin-top:8px;font-family:var(--mono);font-size:.72rem;white-space:pre-wrap;word-break:break-word;color:var(--muted);";
+      pre2.textContent = "module: "+(s.module||"")+"\n\nprompt:\n"+JSON.stringify(s.prompt||{},null,2)+"\n\nresponse:\n"+JSON.stringify(s.response||{},null,2);
+      d.appendChild(pre2); container.appendChild(d);
+    });
+    panel.appendChild(container);
+  }
+  toggle.onclick = () => {
+    const isOpen = panel.style.display !== "none";
+    panel.style.display = isOpen ? "none" : "block";
+    toggle.textContent = (isOpen ? "▶" : "▼") + ` Show execution steps (${stepsArr.length})`;
+    if (!isOpen) panel.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  };
+  box.appendChild(toggle); box.appendChild(panel);
+  chat().appendChild(box); scrollBottom();
+}
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function renderMd(s) {
+  let out = esc(s);
+  out = out.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  out = out.replace(/(^|\s)_(.+?)_(?=\s|$)/g,"$1<em>$2</em>");
+  out = out.replace(/\n/g,"<br>");
+  return out;
+}
+function scrollBottom() { const c=chat(); requestAnimationFrame(()=>c.scrollTop=c.scrollHeight); }
+document.getElementById("user-input").addEventListener("input", function(){ this.style.height="44px"; this.style.height=Math.min(this.scrollHeight,120)+"px"; });
+updateNavButtons();
+</script>
+<!-- Analyze Ad Modal -->
+<div class="modal-overlay" id="analyze-modal">
+  <div class="modal-box">
+    <div class="modal-title">📊 Analyze Ad Performance</div>
+    <p style="font-size:.85rem;color:#6b2040;">Enter your metrics or upload a CSV — we compare against benchmarks and suggest improvements.</p>
+    <div>
+      <div class="modal-label">Describe your metrics or what to analyze</div>
+      <textarea class="modal-textarea" id="analyze-input" placeholder="e.g. My Facebook campaign: CTR=3%, ROI=2.5, conversion_rate=5%&#10;Or: analyze my ad performance and suggest a better headline"></textarea>
+    </div>
+    <div>
+      <div class="modal-label">Upload campaign CSV <span style="font-weight:400;color:#9ca3af">(optional)</span></div>
+      <label class="csv-drop" id="csv-drop-zone">
+        <input type="file" id="csv-file-input" accept=".csv" onchange="handleCsvSelect(this)">
+        <span id="csv-drop-text">Drag &amp; drop a CSV here or <strong>browse</strong></span>
+      </label>
+      <div class="csv-filename" id="csv-filename"></div>
+      <div class="csv-attached-badge" id="csv-badge">
+        <span>📎</span> <span id="csv-badge-name">file.csv</span> <span style="font-weight:400;color:#166534">ready to analyze</span>
+        <span class="badge-remove" onclick="removeCsvAttachment()" title="Remove file">✕</span>
+      </div>
+      <div class="modal-hint">Required columns: Campaign_ID, Clicks, Impressions, ROI, Conversion_Rate, Acquisition_Cost</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeAnalyzeModal()">Cancel</button>
+      <button class="modal-analyze-btn" id="analyze-submit-btn" onclick="submitAnalyze()">🔍 Analyze</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
